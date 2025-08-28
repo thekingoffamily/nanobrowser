@@ -36,7 +36,7 @@ Looking for a powerful AI browser agent without the $200/month price tag of Open
 - **Flexible LLM Options** - Connect to your preferred LLM providers with the freedom to choose different models for different agents.
 - **Fully Open Source** - Complete transparency in how your browser is automated. No black boxes or hidden processes.
 
-> **Note:** We currently support OpenAI, Anthropic, Gemini, Ollama, Groq, Cerebras, Llama and custom OpenAI-Compatible providers, more providers will be supported.
+> **Note:** We currently support OpenAI, Anthropic, Gemini, Ollama, Groq, Cerebras, Llama, **G4F (GPT4Free)** and custom OpenAI-Compatible providers, more providers will be supported.
 
 
 ## 📊 Key Features
@@ -153,6 +153,43 @@ Nanobrowser allows you to configure different LLM models for each agent to balan
   - Lightweight and cost-efficient
   - Suitable for basic navigation tasks
 
+### G4F (GPT4Free) - Free Access to Premium Models
+- **What is G4F?**:
+  - G4F provides free access to premium AI models without API keys
+  - Perfect for users who want to try Nanobrowser without immediate costs
+  - Community-maintained project with rotating access to various LLM providers
+
+- **Setup G4F API**:
+  1. **Install G4F**:
+     ```bash
+     pip install g4f[all]
+     ```
+  2. **Start G4F API Server**:
+     ```bash
+     python -m g4f.api
+     ```
+     Or with custom port:
+     ```bash
+     python -m g4f.api --port 1337
+     ```
+  3. **Configure in Nanobrowser**:
+     - Open Nanobrowser settings
+     - Add G4F provider with endpoint: `http://127.0.0.1:1337/v1`
+     - No API key required
+
+- **Recommended G4F Models**:
+  - **qwen-2.5** - Excellent for planning and reasoning
+  - **qwen-3-32b** - Advanced model for complex tasks
+  - **blackbox** - Reliable general-purpose model
+  - **phi-4** - Good balance of performance and speed
+  - **gemma-2-9b** - Efficient for navigation tasks
+
+- **G4F Best Practices**:
+  - Models may have varying availability
+  - If one model fails, try switching to another
+  - G4F works best with clear, specific prompts
+  - Some models may have rate limits or temporary outages
+
 ### Local Models
 - **Setup Options**:
   - Use Ollama or other custom OpenAI-compatible providers to run models locally
@@ -175,6 +212,32 @@ Nanobrowser allows you to configure different LLM models for each agent to balan
 > **Note**: The cost-effective configuration may produce less stable outputs and require more iterations for complex tasks.
 
 > **Tip**: Feel free to experiment with your own model configurations! Found a great combination? Share it with the community in our [Discord](https://discord.gg/NN3ABHggMK) to help others optimize their setup.
+
+## 🆓 Free AI Access with G4F
+
+**Want to try Nanobrowser without API costs?** Use G4F (GPT4Free) for immediate access to premium AI models:
+
+1. **Quick G4F Setup**:
+   ```bash
+   # Install G4F
+   pip install g4f[all]
+   
+   # Start API server
+   python -m g4f.api
+   ```
+
+2. **Configure in Nanobrowser**:
+   - Settings → Add G4F Provider
+   - Endpoint: `http://127.0.0.1:1337/v1`
+   - Select models like `qwen-2.5` or `blackbox`
+   - No API key needed!
+
+3. **Start Automating**:
+   - Zero setup costs
+   - Access to multiple premium models
+   - Perfect for testing and learning
+
+> **Note**: G4F relies on community-maintained access and model availability may vary. For production use, consider dedicated API providers.
 
 ## 💡 See It In Action
 
