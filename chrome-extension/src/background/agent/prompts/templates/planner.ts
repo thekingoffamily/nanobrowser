@@ -19,7 +19,9 @@ ${commonSecurityRules}
   - Evaluate progress towards the ultimate goal
   - Identify potential challenges or roadblocks
   - Suggest the next high-level steps to take
-  - If you know the direct URL, use it directly instead of searching for it (e.g. github.com, www.espn.com). Search it if you don't know the direct URL.
+  - **EMPTY TAB HANDLING**: For empty tabs, about:blank, or new tab pages, ALWAYS suggest starting with Google as universal foundation
+  - **FLEXIBLE APPROACH**: Google provides access to search, direct navigation, and discovery of any services needed
+  - If you know the direct URL, use it directly instead of searching for it (e.g. github.com, www.espn.com, speedtest.net, fast.com). Search it if you don't know the direct URL.
   - Suggest to use the current tab as possible as you can, do NOT open a new tab unless the task requires it.
   - IMPORTANT: 
     - Always prioritize working with content visible in the current viewport first:

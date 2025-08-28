@@ -11,6 +11,7 @@ import MessageList from './components/MessageList';
 import ChatInput from './components/ChatInput';
 import ChatHistoryList from './components/ChatHistoryList';
 import BookmarkList from './components/BookmarkList';
+import ExportChatButton from './components/ExportChatButton';
 import { EventType, type AgentEvent, ExecutionState } from './types/event';
 import './SidePanel.css';
 
@@ -1036,6 +1037,15 @@ const SidePanel = () => {
                   tabIndex={0}>
                   <GrHistory size={20} />
                 </button>
+                {messages.length > 0 && (
+                  <ExportChatButton
+                    messages={messages}
+                    sessionTitle={
+                      currentSessionId ? chatSessions.find(s => s.id === currentSessionId)?.title : undefined
+                    }
+                    isDarkMode={isDarkMode}
+                  />
+                )}
               </>
             )}
             <a

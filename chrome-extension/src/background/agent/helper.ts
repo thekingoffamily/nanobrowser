@@ -8,56 +8,17 @@ import { ChatCerebras } from '@langchain/cerebras';
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { ChatOllama } from '@langchain/ollama';
 import { ChatDeepSeek } from '@langchain/deepseek';
-import { AIMessage } from '@langchain/core/messages';
-import type { BaseMessage } from '@langchain/core/messages';
 
 const maxTokens = 1024 * 4;
 
 // Custom ChatLlama class to handle Llama API response format
 class ChatLlama extends ChatOpenAI {
-  constructor(args: any) {
+  constructor(args: ConstructorParameters<typeof ChatOpenAI>[0]) {
     super(args);
   }
 
-  // Override the completionWithRetry method to intercept and transform the response
-  async completionWithRetry(request: any, options?: any): Promise<any> {
-    try {
-      // Make the request using the parent's implementation
-      const response = await super.completionWithRetry(request, options);
-
-      // Check if this is a Llama API response format
-      if (response?.completion_message?.content?.text) {
-        // Transform Llama API response to OpenAI format
-        const transformedResponse = {
-          id: response.id || 'llama-response',
-          object: 'chat.completion',
-          created: Date.now(),
-          model: request.model,
-          choices: [
-            {
-              index: 0,
-              message: {
-                role: 'assistant',
-                content: response.completion_message.content.text,
-              },
-              finish_reason: response.completion_message.stop_reason || 'stop',
-            },
-          ],
-          usage: {
-            prompt_tokens: response.metrics?.find((m: any) => m.metric === 'num_prompt_tokens')?.value || 0,
-            completion_tokens: response.metrics?.find((m: any) => m.metric === 'num_completion_tokens')?.value || 0,
-            total_tokens: response.metrics?.find((m: any) => m.metric === 'num_total_tokens')?.value || 0,
-          },
-        };
-
-        return transformedResponse;
-      }
-
-      return response;
-    } catch (error: any) {
-      console.error(`[ChatLlama] Error during API call:`, error);
-      throw error;
-    }
+  _llmType(): string {
+    return 'chat-llama';
   }
 }
 
@@ -373,7 +334,37 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
       }
       args.configuration = configuration;
 
-      return new ChatLlama(args);
+      return new ChatLlama(args) as BaseChatModel;
+    }
+    case ProviderTypeEnum.G4F: {
+      // G4F provider uses OpenAI-compatible API but needs special handling
+      console.log('🤖 [NANOBROWSER] Creating G4F chat model for:', modelConfig.modelName);
+      console.log('🤖 [NANOBROWSER] G4F Base URL:', providerConfig.baseUrl);
+
+      const args: {
+        model: string;
+        apiKey?: string;
+        configuration?: Record<string, unknown>;
+        topP?: number;
+        temperature?: number;
+        maxTokens?: number;
+      } = {
+        model: modelConfig.modelName,
+        // G4F usually doesn't require API key, but some models might
+        apiKey: providerConfig.apiKey || 'g4f-no-key',
+        topP: (modelConfig.parameters?.topP ?? 0.1) as number,
+        temperature: (modelConfig.parameters?.temperature ?? 0.1) as number,
+        maxTokens,
+      };
+
+      const configuration: Record<string, unknown> = {};
+      if (providerConfig.baseUrl) {
+        configuration.baseURL = providerConfig.baseUrl;
+      }
+      args.configuration = configuration;
+
+      console.log('✅ [NANOBROWSER] G4F chat model created successfully');
+      return new ChatOpenAI(args);
     }
     default: {
       // by default, we think it's a openai-compatible provider

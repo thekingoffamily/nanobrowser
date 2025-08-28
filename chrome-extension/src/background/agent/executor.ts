@@ -30,6 +30,8 @@ export interface ExecutorExtraArgs {
   extractorLLM?: BaseChatModel;
   agentOptions?: Partial<AgentOptions>;
   generalSettings?: GeneralSettingsConfig;
+  navigatorProvider?: string;
+  plannerProvider?: string;
 }
 
 export class Executor {
@@ -40,6 +42,10 @@ export class Executor {
   private readonly navigatorPrompt: NavigatorPrompt;
   private readonly generalSettings: GeneralSettingsConfig | undefined;
   private tasks: string[] = [];
+  // 🔄 [LOOP-DETECTION] Track execution state to prevent infinite loops
+  private lastPlannerOutput: string | null = null;
+  private repetitiveActionCount = 0;
+  private readonly MAX_REPETITIVE_ACTIONS = 3;
   constructor(
     task: string,
     taskId: string,
@@ -47,11 +53,18 @@ export class Executor {
     navigatorLLM: BaseChatModel,
     extraArgs?: Partial<ExecutorExtraArgs>,
   ) {
+    console.log('🔨 [EXECUTOR] Creating new executor instance...');
+    console.log('🔨 [EXECUTOR] Task:', task);
+    console.log('🔨 [EXECUTOR] Task ID:', taskId);
+
     const messageManager = new MessageManager();
+    console.log('📨 [EXECUTOR] Message manager created');
 
     const plannerLLM = extraArgs?.plannerLLM ?? navigatorLLM;
     const extractorLLM = extraArgs?.extractorLLM ?? navigatorLLM;
     const eventManager = new EventManager();
+    console.log('📡 [EXECUTOR] Event manager created');
+
     const context = new AgentContext(
       taskId,
       browserContext,
@@ -59,31 +72,46 @@ export class Executor {
       eventManager,
       extraArgs?.agentOptions ?? {},
     );
+    console.log('🧪 [EXECUTOR] Agent context created');
 
     this.generalSettings = extraArgs?.generalSettings;
     this.tasks.push(task);
-    this.navigatorPrompt = new NavigatorPrompt(context.options.maxActionsPerStep);
-    this.plannerPrompt = new PlannerPrompt();
+    console.log('🎯 [EXECUTOR] Task added to queue:', this.tasks.length, 'total tasks');
+
+    this.navigatorPrompt = new NavigatorPrompt(context.options.maxActionsPerStep, extraArgs?.navigatorProvider);
+    this.plannerPrompt = new PlannerPrompt(extraArgs?.plannerProvider);
+    console.log('📜 [EXECUTOR] Prompts initialized with provider info');
+    console.log('📜 [EXECUTOR] Navigator provider:', extraArgs?.navigatorProvider);
+    console.log('📜 [EXECUTOR] Planner provider:', extraArgs?.plannerProvider);
 
     const actionBuilder = new ActionBuilder(context, extractorLLM);
     const navigatorActionRegistry = new NavigatorActionRegistry(actionBuilder.buildDefaultActions());
+    console.log('🔨 [EXECUTOR] Action registry built with', Object.keys(navigatorActionRegistry).length, 'actions');
 
     // Initialize agents with their respective prompts
+    console.log('🦭 [EXECUTOR] Creating Navigator agent...');
     this.navigator = new NavigatorAgent(navigatorActionRegistry, {
       chatLLM: navigatorLLM,
       context: context,
       prompt: this.navigatorPrompt,
+      provider: extraArgs?.navigatorProvider || '',
     });
+    console.log('✅ [EXECUTOR] Navigator agent created');
 
+    console.log('📊 [EXECUTOR] Creating Planner agent...');
     this.planner = new PlannerAgent({
       chatLLM: plannerLLM,
       context: context,
       prompt: this.plannerPrompt,
+      provider: extraArgs?.plannerProvider || '',
     });
+    console.log('✅ [EXECUTOR] Planner agent created');
 
     this.context = context;
     // Initialize message history
+    console.log('📨 [EXECUTOR] Initializing message history...');
     this.context.messageManager.initTaskMessages(this.navigatorPrompt.getSystemMessage(), task);
+    console.log('✅ [EXECUTOR] Executor initialization complete');
   }
 
   subscribeExecutionEvents(callback: EventCallback): void {
@@ -107,20 +135,57 @@ export class Executor {
    * Helper method to run planner and store its output
    */
   private async runPlanner(): Promise<AgentOutput<PlannerOutput> | null> {
+    console.log('📊 [EXECUTOR] Starting planner execution...');
     try {
       // Add current browser state to memory
       let positionForPlan = 0;
       if (this.tasks.length > 1 || this.context.nSteps > 0) {
+        console.log('📊 [EXECUTOR] Adding browser state to memory...');
         await this.navigator.addStateMessageToMemory();
         positionForPlan = this.context.messageManager.length() - 1;
+        console.log('📊 [EXECUTOR] Browser state added at position:', positionForPlan);
       } else {
         positionForPlan = this.context.messageManager.length();
+        console.log('📊 [EXECUTOR] Using position for plan:', positionForPlan);
       }
 
       // Execute planner
+      console.log('📊 [EXECUTOR] Executing planner...');
       const planOutput = await this.planner.execute();
+      console.log('📊 [EXECUTOR] Planner execution completed, success:', !!planOutput.result);
 
       if (planOutput.result) {
+        console.log('📊 [EXECUTOR] Processing planner result...');
+
+        // 🔄 [LOOP-DETECTION] Check for repetitive planner outputs
+        const currentPlannerOutput = planOutput.result.next_steps || planOutput.result.observation || '';
+        if (this.lastPlannerOutput && this.lastPlannerOutput === currentPlannerOutput) {
+          this.repetitiveActionCount++;
+          console.warn(
+            `⚠️ [EXECUTOR] Repetitive planner output detected (${this.repetitiveActionCount}/${this.MAX_REPETITIVE_ACTIONS}):`,
+            currentPlannerOutput.substring(0, 100),
+          );
+
+          if (this.repetitiveActionCount >= this.MAX_REPETITIVE_ACTIONS) {
+            console.error('❌ [EXECUTOR] Maximum repetitive actions reached, stopping to prevent infinite loop');
+            // Force task completion to break the loop
+            const forceCompletionPlan: PlannerOutput = {
+              observation: 'Detected repetitive behavior - completing task to prevent infinite loop',
+              done: true,
+              challenges: 'System detected potential infinite loop',
+              next_steps: 'Task completed due to loop prevention',
+              final_answer: 'Task stopped to prevent infinite execution loop',
+              reasoning: 'Loop detection mechanism activated',
+              web_task: true,
+            };
+            this.context.messageManager.addPlan(JSON.stringify(forceCompletionPlan), positionForPlan);
+            return { result: forceCompletionPlan, error: null };
+          }
+        } else {
+          // Reset counter if output is different
+          this.repetitiveActionCount = 0;
+          this.lastPlannerOutput = currentPlannerOutput;
+        }
         // Store plan in message history
         const observation = wrapUntrustedContent(planOutput.result.observation);
         const plan: PlannerOutput = {
@@ -128,10 +193,13 @@ export class Executor {
           observation,
         };
         this.context.messageManager.addPlan(JSON.stringify(plan), positionForPlan);
+        console.log('📊 [EXECUTOR] Plan stored in message history');
+        console.log('📊 [EXECUTOR] Plan done status:', plan.done);
       }
 
       return planOutput;
     } catch (error) {
+      console.error('❌ [EXECUTOR] Planner execution failed:', error);
       logger.error('Planner execution failed:', error);
       return null;
     }
@@ -142,8 +210,10 @@ export class Executor {
    */
   private checkTaskCompletion(planOutput: AgentOutput<PlannerOutput> | null): boolean {
     if (planOutput?.result?.done) {
+      console.log('✅ [EXECUTOR] Planner confirms task completion');
       logger.info('✅ Planner confirms task completion');
       if (planOutput.result.final_answer) {
+        console.log('💬 [EXECUTOR] Final answer provided:', planOutput.result.final_answer.substring(0, 100) + '...');
         this.context.finalAnswer = planOutput.result.final_answer;
       }
       return true;
@@ -157,13 +227,18 @@ export class Executor {
    * @returns {Promise<void>}
    */
   async execute(): Promise<void> {
-    logger.info(`🚀 Executing task: ${this.tasks[this.tasks.length - 1]}`);
+    const currentTask = this.tasks[this.tasks.length - 1];
+    console.log('🚀 [EXECUTOR] Starting task execution:', currentTask);
+    logger.info(`🚀 Executing task: ${currentTask}`);
+
     // reset the step counter
     const context = this.context;
     context.nSteps = 0;
     const allowedMaxSteps = this.context.options.maxSteps;
+    console.log('🔢 [EXECUTOR] Max steps allowed:', allowedMaxSteps);
 
     try {
+      console.log('📡 [EXECUTOR] Emitting TASK_START event');
       this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_START, this.context.taskId);
 
       let step = 0;
@@ -176,51 +251,78 @@ export class Executor {
           maxSteps: context.options.maxSteps,
         };
 
+        console.log(`🔄 [EXECUTOR] === STEP ${step + 1} / ${allowedMaxSteps} ===`);
         logger.info(`🔄 Step ${step + 1} / ${allowedMaxSteps}`);
+
         if (await this.shouldStop()) {
+          console.log('⏹️ [EXECUTOR] Stop condition met, breaking execution loop');
           break;
         }
 
         // Run planner periodically for guidance
         if (this.planner && (context.nSteps % context.options.planningInterval === 0 || navigatorDone)) {
+          console.log(
+            '📊 [EXECUTOR] Running planner (interval:',
+            context.options.planningInterval,
+            'steps:',
+            context.nSteps,
+            'navigatorDone:',
+            navigatorDone,
+            ')',
+          );
           navigatorDone = false;
           latestPlanOutput = await this.runPlanner();
 
           // Check if task is complete after planner run
           if (this.checkTaskCompletion(latestPlanOutput)) {
+            console.log('✅ [EXECUTOR] Task marked as complete by planner');
             break;
           }
         }
 
         // Execute navigator
+        console.log('🦭 [EXECUTOR] Running navigator...');
         navigatorDone = await this.navigate();
+        console.log('🦭 [EXECUTOR] Navigator completed, done:', navigatorDone);
 
         // If navigator indicates completion, the next periodic planner run will validate it
         if (navigatorDone) {
+          console.log('🔄 [EXECUTOR] Navigator indicates completion - will be validated by next planner run');
           logger.info('🔄 Navigator indicates completion - will be validated by next planner run');
         }
       }
 
       // Determine task completion status
       const isCompleted = latestPlanOutput?.result?.done === true;
+      console.log('🏁 [EXECUTOR] Task execution loop completed');
+      console.log('🏁 [EXECUTOR] Steps executed:', step);
+      console.log('🏁 [EXECUTOR] Task completed:', isCompleted);
+      console.log('🏁 [EXECUTOR] Final answer available:', !!latestPlanOutput?.result?.final_answer);
 
       if (isCompleted) {
+        console.log('✅ [EXECUTOR] Task completed successfully');
         // Emit final answer if available, otherwise use task ID
         const finalMessage = this.context.finalAnswer || this.context.taskId;
         this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_OK, finalMessage);
       } else if (step >= allowedMaxSteps) {
+        console.log('❌ [EXECUTOR] Task failed: Max steps reached');
         logger.error('❌ Task failed: Max steps reached');
         this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, t('exec_errors_maxStepsReached'));
       } else if (this.context.stopped) {
+        console.log('🛑 [EXECUTOR] Task was stopped by user');
         this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t('exec_task_cancel'));
       } else {
+        console.log('⏸️ [EXECUTOR] Task was paused');
         this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_PAUSE, t('exec_task_pause'));
       }
     } catch (error) {
+      console.error('❌ [EXECUTOR] Task execution failed:', error);
       if (error instanceof RequestCancelledError) {
+        console.log('🛑 [EXECUTOR] Task was cancelled');
         this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t('exec_task_cancel'));
       } else {
         const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error('❌ [EXECUTOR] Task failed with error:', errorMessage);
         this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, t('exec_task_fail', [errorMessage]));
       }
     } finally {
@@ -241,6 +343,10 @@ export class Executor {
   private async navigate(): Promise<boolean> {
     const context = this.context;
     try {
+      // Get current browser state before navigation to detect changes
+      const beforeState = await context.browserContext.getCachedState();
+      const beforeUrl = beforeState?.url || '';
+
       // Get and execute navigation action
       // check if the task is paused or stopped
       if (context.paused || context.stopped) {
@@ -251,6 +357,22 @@ export class Executor {
       if (context.paused || context.stopped) {
         return false;
       }
+
+      // 🔄 [PROGRESS-DETECTION] Check if we actually made progress
+      const afterState = await context.browserContext.getCachedState();
+      const afterUrl = afterState?.url || '';
+
+      if (beforeUrl === afterUrl && beforeUrl !== '' && !navOutput.result?.done) {
+        console.warn(
+          `⚠️ [EXECUTOR] No URL change detected after navigation step. Before: ${beforeUrl}, After: ${afterUrl}`,
+        );
+        // Still count as a step but note the lack of progress
+      } else if (beforeUrl !== afterUrl) {
+        console.log(`✅ [EXECUTOR] Navigation progress detected: ${beforeUrl} → ${afterUrl}`);
+        // Reset repetitive counter on successful navigation
+        this.repetitiveActionCount = 0;
+      }
+
       context.nSteps++;
       if (navOutput.error) {
         throw new Error(navOutput.error);

@@ -88,7 +88,7 @@ export const DEFAULT_BROWSER_CONTEXT_CONFIG: BrowserContextConfig = {
   allowedUrls: [],
   deniedUrls: [],
   includeDynamicAttributes: true,
-  homePageUrl: 'about:blank',
+  homePageUrl: 'https://www.google.com',
   displayHighlights: true,
 };
 

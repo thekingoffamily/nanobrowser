@@ -85,6 +85,12 @@
   "chat_history_delete": {
     "message": "Delete session"
   },
+  "chat_history_export": {
+    "message": "Export chat history"
+  },
+  "export_chat_history": {
+    "message": "Export chat history"
+  },
   "chat_bookmarks_header": {
     "message": "Quick Start"
   },

@@ -65,6 +65,8 @@ export function getProviderTypeByProviderId(providerId: string): ProviderTypeEnu
     case ProviderTypeEnum.OpenRouter:
     case ProviderTypeEnum.Groq:
     case ProviderTypeEnum.Cerebras:
+    case ProviderTypeEnum.Llama:
+    case ProviderTypeEnum.G4F:
       return providerId;
     default:
       return ProviderTypeEnum.CustomOpenAI;
@@ -97,6 +99,8 @@ export function getDefaultDisplayNameFromProviderId(providerId: string): string 
       return 'Cerebras';
     case ProviderTypeEnum.Llama:
       return 'Llama';
+    case ProviderTypeEnum.G4F:
+      return 'G4F (GPT4Free)';
     default:
       return providerId; // Use the provider id as display name for custom providers by default
   }
@@ -114,8 +118,9 @@ export function getDefaultProviderConfig(providerId: string): ProviderConfig {
     case ProviderTypeEnum.Groq: // Groq uses modelNames
     case ProviderTypeEnum.Cerebras: // Cerebras uses modelNames
     case ProviderTypeEnum.Llama: // Llama uses modelNames
+    case ProviderTypeEnum.G4F: // G4F uses modelNames
       return {
-        apiKey: '',
+        apiKey: providerId === ProviderTypeEnum.G4F ? 'g4f-local' : '',
         name: getDefaultDisplayNameFromProviderId(providerId),
         type: providerId,
         baseUrl:
@@ -123,7 +128,9 @@ export function getDefaultProviderConfig(providerId: string): ProviderConfig {
             ? 'https://openrouter.ai/api/v1'
             : providerId === ProviderTypeEnum.Llama
               ? 'https://api.llama.com/v1'
-              : undefined,
+              : providerId === ProviderTypeEnum.G4F
+                ? 'http://127.0.0.1:1337/v1'
+                : undefined,
         modelNames: [...(llmProviderModelNames[providerId] || [])],
         createdAt: Date.now(),
       };
@@ -246,7 +253,11 @@ export const llmProviderStore: LLMProviderStorage = {
       if (!config.apiKey?.trim()) {
         throw new Error('API Key is required for Azure OpenAI');
       }
-    } else if (providerType !== ProviderTypeEnum.CustomOpenAI && providerType !== ProviderTypeEnum.Ollama) {
+    } else if (
+      providerType !== ProviderTypeEnum.CustomOpenAI &&
+      providerType !== ProviderTypeEnum.Ollama &&
+      providerType !== ProviderTypeEnum.G4F
+    ) {
       if (!config.apiKey?.trim()) {
         throw new Error(`API Key is required for ${getDefaultDisplayNameFromProviderId(providerId)}`);
       }

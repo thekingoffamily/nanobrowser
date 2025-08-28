@@ -1,0 +1,304 @@
+[
+  {
+    "id": "Anthropic",
+    "object": "provider",
+    "created": 0,
+    "url": "https://console.anthropic.com",
+    "label": "Anthropic API"
+  },
+  { "id": "ApiAirforce", "object": "provider", "created": 0, "url": "https://api.airforce", "label": "Api.Airforce" },
+  { "id": "Azure", "object": "provider", "created": 0, "url": "https://ai.azure.com", "label": "Azure ☁️" },
+  {
+    "id": "BingCreateImages",
+    "object": "provider",
+    "created": 0,
+    "url": "https://www.bing.com/images/create",
+    "label": "Microsoft Designer in Bing"
+  },
+  {
+    "id": "BlackForestLabs_Flux1Dev",
+    "object": "provider",
+    "created": 0,
+    "url": "https://black-forest-labs-flux-1-dev.hf.space",
+    "label": "BlackForestLabs Flux-1-Dev"
+  },
+  {
+    "id": "BlackForestLabs_Flux1KontextDev",
+    "object": "provider",
+    "created": 0,
+    "url": "https://black-forest-labs-flux-1-kontext-dev.hf.space",
+    "label": "BlackForestLabs Flux-1-Kontext-Dev"
+  },
+  { "id": "Blackbox", "object": "provider", "created": 0, "url": "https://www.blackbox.ai", "label": "Blackbox AI" },
+  {
+    "id": "BlackboxPro",
+    "object": "provider",
+    "created": 0,
+    "url": "https://www.blackbox.ai",
+    "label": "Blackbox AI Pro"
+  },
+  {
+    "id": "Cerebras",
+    "object": "provider",
+    "created": 0,
+    "url": "https://inference.cerebras.ai/",
+    "label": "Cerebras Inference"
+  },
+  { "id": "Chatai", "object": "provider", "created": 0, "url": "https://chatai.aritek.app", "label": "Chatai" },
+  {
+    "id": "CohereForAI_C4AI_Command",
+    "object": "provider",
+    "created": 0,
+    "url": "https://coherelabs-c4ai-command.hf.space",
+    "label": "CohereForAI C4AI Command"
+  },
+  {
+    "id": "Copilot",
+    "object": "provider",
+    "created": 0,
+    "url": "https://copilot.microsoft.com",
+    "label": "Microsoft Copilot"
+  },
+  {
+    "id": "CopilotAccount",
+    "object": "provider",
+    "created": 0,
+    "url": "https://copilot.microsoft.com",
+    "label": "Microsoft Copilot"
+  },
+  { "id": "Custom", "object": "provider", "created": 0, "url": null, "label": "Custom Provider" },
+  { "id": "DeepInfra", "object": "provider", "created": 0, "url": "https://deepinfra.com", "label": null },
+  { "id": "DeepInfraChat", "object": "provider", "created": 0, "url": "https://deepinfra.com/chat", "label": null },
+  {
+    "id": "DeepSeek",
+    "object": "provider",
+    "created": 0,
+    "url": "https://platform.deepseek.com",
+    "label": "DeepSeek API"
+  },
+  {
+    "id": "DeepseekAI_JanusPro7b",
+    "object": "provider",
+    "created": 0,
+    "url": "https://huggingface.co/spaces/deepseek-ai/Janus-Pro-7B",
+    "label": "DeepseekAI Janus-Pro-7B"
+  },
+  { "id": "EasyChat", "object": "provider", "created": 0, "url": "https://chat3.eqing.tech", "label": null },
+  { "id": "FenayAI", "object": "provider", "created": 0, "url": "https://fenayai.com", "label": null },
+  { "id": "GLM", "object": "provider", "created": 0, "url": "https://chat.z.ai", "label": null },
+  { "id": "Gemini", "object": "provider", "created": 0, "url": "https://gemini.google.com", "label": "Google Gemini" },
+  { "id": "GeminiCLI", "object": "provider", "created": 0, "url": null, "label": "Google Gemini CLI" },
+  {
+    "id": "GeminiPro",
+    "object": "provider",
+    "created": 0,
+    "url": "https://ai.google.dev",
+    "label": "Google Gemini API"
+  },
+  { "id": "GigaChat", "object": "provider", "created": 0, "url": "https://developers.sber.ru/gigachat", "label": null },
+  {
+    "id": "GithubCopilot",
+    "object": "provider",
+    "created": 0,
+    "url": "https://github.com/copilot",
+    "label": "GitHub Copilot"
+  },
+  {
+    "id": "GithubCopilotAPI",
+    "object": "provider",
+    "created": 0,
+    "url": "https://github.com/copilot",
+    "label": "GitHub Copilot API"
+  },
+  { "id": "GlhfChat", "object": "provider", "created": 0, "url": "https://glhf.chat", "label": null },
+  { "id": "GptOss", "object": "provider", "created": 0, "url": "https://gpt-oss.com", "label": "gpt-oss (playground)" },
+  { "id": "Grok", "object": "provider", "created": 0, "url": "https://grok.com", "label": "Grok AI" },
+  { "id": "Groq", "object": "provider", "created": 0, "url": "https://console.groq.com/playground", "label": null },
+  { "id": "HailuoAI", "object": "provider", "created": 0, "url": "https://www.hailuo.ai", "label": "Hailuo AI" },
+  { "id": "HuggingFace", "object": "provider", "created": 0, "url": "https://huggingface.co", "label": null },
+  {
+    "id": "HuggingFaceAPI",
+    "object": "provider",
+    "created": 0,
+    "url": "https://api-inference.huggingface.com",
+    "label": "HuggingFace (Text Generation)"
+  },
+  {
+    "id": "HuggingFaceMedia",
+    "object": "provider",
+    "created": 0,
+    "url": "https://huggingface.co",
+    "label": "HuggingFace"
+  },
+  { "id": "HuggingSpace", "object": "provider", "created": 0, "url": "https://huggingface.co/spaces", "label": null },
+  { "id": "ImageLabs", "object": "provider", "created": 0, "url": "https://editor.imagelabs.net", "label": null },
+  { "id": "Kimi", "object": "provider", "created": 0, "url": "https://www.kimi.com", "label": null },
+  { "id": "LMArenaBeta", "object": "provider", "created": 0, "url": "https://lmarena.ai", "label": "LMArena (New)" },
+  { "id": "LambdaChat", "object": "provider", "created": 0, "url": "https://lambda.chat", "label": "Lambda Chat" },
+  { "id": "MetaAI", "object": "provider", "created": 0, "url": "https://www.meta.ai", "label": "Meta AI" },
+  { "id": "MetaAIAccount", "object": "provider", "created": 0, "url": "https://www.meta.ai", "label": "Meta AI" },
+  {
+    "id": "MicrosoftDesigner",
+    "object": "provider",
+    "created": 0,
+    "url": "https://designer.microsoft.com",
+    "label": "Microsoft Designer"
+  },
+  {
+    "id": "Microsoft_Phi_4_Multimodal",
+    "object": "provider",
+    "created": 0,
+    "url": "https://huggingface.co/spaces/microsoft/phi-4-multimodal",
+    "label": "Microsoft Phi-4"
+  },
+  { "id": "MiniMax", "object": "provider", "created": 0, "url": "https://www.hailuo.ai/chat", "label": "MiniMax API" },
+  { "id": "Nvidia", "object": "provider", "created": 0, "url": "https://build.nvidia.com", "label": "Nvidia" },
+  {
+    "id": "OIVSCodeSer0501",
+    "object": "provider",
+    "created": 0,
+    "url": "https://oi-vscode-server-0501.onrender.com",
+    "label": "OI VSCode Server 0501"
+  },
+  {
+    "id": "OIVSCodeSer2",
+    "object": "provider",
+    "created": 0,
+    "url": "https://oi-vscode-server-2.onrender.com",
+    "label": "OI VSCode Server 2"
+  },
+  { "id": "Ollama", "object": "provider", "created": 0, "url": "https://ollama.com", "label": "Ollama 🦙" },
+  { "id": "OpenAIFM", "object": "provider", "created": 0, "url": "https://www.openai.fm", "label": "OpenAI.fm" },
+  { "id": "OpenRouter", "object": "provider", "created": 0, "url": "https://openrouter.ai", "label": "OpenRouter" },
+  {
+    "id": "OpenRouterFree",
+    "object": "provider",
+    "created": 0,
+    "url": "https://openrouter.ai",
+    "label": "OpenRouter (free)"
+  },
+  {
+    "id": "OpenaiAPI",
+    "object": "provider",
+    "created": 0,
+    "url": "https://platform.openai.com",
+    "label": "OpenAI API"
+  },
+  {
+    "id": "OpenaiAccount",
+    "object": "provider",
+    "created": 0,
+    "url": "https://chatgpt.com",
+    "label": "OpenAI ChatGPT"
+  },
+  { "id": "OpenaiChat", "object": "provider", "created": 0, "url": "https://chatgpt.com", "label": "OpenAI ChatGPT" },
+  {
+    "id": "OperaAria",
+    "object": "provider",
+    "created": 0,
+    "url": "https://play.google.com/store/apps/details?id=com.opera.browser",
+    "label": "Opera Aria"
+  },
+  {
+    "id": "PerplexityApi",
+    "object": "provider",
+    "created": 0,
+    "url": "https://www.perplexity.ai",
+    "label": "Perplexity API"
+  },
+  {
+    "id": "PerplexityLabs",
+    "object": "provider",
+    "created": 0,
+    "url": "https://labs.perplexity.ai",
+    "label": "Perplexity Labs"
+  },
+  { "id": "Pi", "object": "provider", "created": 0, "url": "https://pi.ai/talk", "label": null },
+  {
+    "id": "PollinationsAI",
+    "object": "provider",
+    "created": 0,
+    "url": "https://pollinations.ai",
+    "label": "Pollinations AI 🌸"
+  },
+  {
+    "id": "PollinationsImage",
+    "object": "provider",
+    "created": 0,
+    "url": "https://pollinations.ai",
+    "label": "PollinationsImage"
+  },
+  {
+    "id": "PuterJS",
+    "object": "provider",
+    "created": 0,
+    "url": "https://docs.puter.com/playground",
+    "label": "Puter.js"
+  },
+  { "id": "Qwen", "object": "provider", "created": 0, "url": "https://chat.qwen.ai", "label": null },
+  {
+    "id": "Qwen_Qwen_2_5",
+    "object": "provider",
+    "created": 0,
+    "url": "https://qwen-qwen2-5.hf.space",
+    "label": "Qwen Qwen-2.5"
+  },
+  {
+    "id": "Qwen_Qwen_2_5M",
+    "object": "provider",
+    "created": 0,
+    "url": "https://qwen-qwen2-5-1m-demo.hf.space",
+    "label": "Qwen Qwen-2.5M"
+  },
+  {
+    "id": "Qwen_Qwen_2_5_Max",
+    "object": "provider",
+    "created": 0,
+    "url": "https://qwen-qwen2-5-max-demo.hf.space",
+    "label": "Qwen Qwen-2.5-Max"
+  },
+  {
+    "id": "Qwen_Qwen_2_72B",
+    "object": "provider",
+    "created": 0,
+    "url": "https://qwen-qwen2-72b-instruct.hf.space",
+    "label": "Qwen Qwen-2.72B"
+  },
+  {
+    "id": "Qwen_Qwen_3",
+    "object": "provider",
+    "created": 0,
+    "url": "https://qwen-qwen3-demo.hf.space",
+    "label": "Qwen Qwen-3"
+  },
+  { "id": "Replicate", "object": "provider", "created": 0, "url": "https://replicate.com", "label": null },
+  {
+    "id": "StabilityAI_SD35Large",
+    "object": "provider",
+    "created": 0,
+    "url": "https://stabilityai-stable-diffusion-3-5-large.hf.space",
+    "label": "StabilityAI SD-3.5-Large"
+  },
+  { "id": "TeachAnything", "object": "provider", "created": 0, "url": "https://www.teach-anything.com", "label": null },
+  { "id": "ThebApi", "object": "provider", "created": 0, "url": "https://theb.ai", "label": "TheB.AI API" },
+  { "id": "Together", "object": "provider", "created": 0, "url": "https://together.xyz", "label": "Together" },
+  { "id": "Video", "object": "provider", "created": 0, "url": null, "label": null },
+  { "id": "WeWordle", "object": "provider", "created": 0, "url": "https://chat-gpt.com", "label": "WeWordle" },
+  {
+    "id": "WhiteRabbitNeo",
+    "object": "provider",
+    "created": 0,
+    "url": "https://www.whiterabbitneo.com",
+    "label": null
+  },
+  { "id": "Yqcloud", "object": "provider", "created": 0, "url": "https://chat9.yqcloud.top", "label": null },
+  {
+    "id": "StabilityAI_SD35Large",
+    "object": "provider",
+    "created": 0,
+    "url": "https://stabilityai-stable-diffusion-3-5-large.hf.space",
+    "label": "StabilityAI SD-3.5-Large"
+  },
+  { "id": "xAI", "object": "provider", "created": 0, "url": "https://console.x.ai", "label": null },
+  { "id": "AnyProvider", "object": "provider", "created": 0, "url": null, "label": null }
+]

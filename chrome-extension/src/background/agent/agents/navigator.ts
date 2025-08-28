@@ -24,7 +24,7 @@ import { type BrowserState, BrowserStateHistory, URLNotAllowedError } from '@src
 import { convertZodToJsonSchema, repairJsonString } from '@src/background/utils';
 import { HistoryTreeProcessor } from '@src/background/browser/dom/history/service';
 import { AgentStepRecord } from '../history';
-import { type DOMHistoryElement } from '@src/background/browser/dom/history/view';
+import { jsonValidator } from '../validation/json-validator';
 
 const logger = createLogger('NavigatorAgent');
 
@@ -56,6 +56,10 @@ export class NavigatorActionRegistry {
     return this.actions[name];
   }
 
+  getAllActions(): Action[] {
+    return Object.values(this.actions);
+  }
+
   setupModelOutputSchema(): z.ZodType {
     const actionSchema = buildDynamicActionSchema(Object.values(this.actions));
     return z.object({
@@ -79,12 +83,21 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     options: BaseAgentOptions,
     extraOptions?: Partial<ExtraAgentOptions>,
   ) {
+    console.log('🦭 [NAVIGATOR] Creating Navigator agent...');
     super(actionRegistry.setupModelOutputSchema(), options, { ...extraOptions, id: 'navigator' });
 
     this.actionRegistry = actionRegistry;
+    console.log('🦭 [NAVIGATOR] Action registry set with', Object.keys(this.actionRegistry).length, 'actions');
+
+    // Initialize JSON validator with current actions
+    const availableActions = this.actionRegistry.getAllActions();
+    jsonValidator.setActionSchema(availableActions);
+    console.log('🔧 [NAVIGATOR] JSON validator initialized with action schema');
 
     // The zod object is too complex to be used directly, so we need to convert it to json schema first for the model to use
     this.jsonSchema = convertZodToJsonSchema(this.modelOutputSchema, 'NavigatorAgentOutput', true);
+    console.log('🦭 [NAVIGATOR] JSON schema prepared for model');
+    console.log('✅ [NAVIGATOR] Navigator agent created successfully');
   }
 
   async invoke(inputMessages: BaseMessage[]): Promise<this['ModelOutput']> {
@@ -141,6 +154,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
   }
 
   async execute(): Promise<AgentOutput<NavigatorResult>> {
+    console.log('🦭 [NAVIGATOR] Starting navigator execution...');
     const agentOutput: AgentOutput<NavigatorResult> = {
       id: this.id,
     };
@@ -151,81 +165,110 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     let actionResults: ActionResult[] = [];
 
     try {
+      console.log('📡 [NAVIGATOR] Emitting STEP_START event');
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.STEP_START, 'Navigating...');
 
       const messageManager = this.context.messageManager;
       // add the browser state message
+      console.log('🌐 [NAVIGATOR] Adding browser state to memory...');
       await this.addStateMessageToMemory();
+
       const currentState = await this.context.browserContext.getCachedState();
       browserStateHistory = new BrowserStateHistory(currentState);
+      console.log('📋 [NAVIGATOR] Browser state history created');
 
       // check if the task is paused or stopped
       if (this.context.paused || this.context.stopped) {
+        console.log('⏸️ [NAVIGATOR] Task is paused or stopped, cancelling navigation');
         cancelled = true;
         return agentOutput;
       }
 
       // call the model to get the actions to take
       const inputMessages = messageManager.getMessages();
+      console.log('🦭 [NAVIGATOR] Calling LLM with', inputMessages.length, 'messages');
       // logger.info('Navigator input message', inputMessages[inputMessages.length - 1]);
 
       const modelOutput = await this.invoke(inputMessages);
+      console.log('✅ [NAVIGATOR] LLM response received');
 
       // check if the task is paused or stopped
       if (this.context.paused || this.context.stopped) {
+        console.log('⏸️ [NAVIGATOR] Task paused/stopped after LLM call, cancelling');
         cancelled = true;
         return agentOutput;
       }
 
+      console.log('🔧 [NAVIGATOR] Processing model output and fixing actions...');
       const actions = this.fixActions(modelOutput);
       modelOutput.action = actions;
       modelOutputString = JSON.stringify(modelOutput);
+      console.log('📦 [NAVIGATOR] Processing', actions.length, 'actions');
 
       // remove the last state message from memory before adding the model output
       this.removeLastStateMessageFromMemory();
       this.addModelOutputToMemory(modelOutput);
+      console.log('📨 [NAVIGATOR] Model output added to memory');
 
       // take the actions
+      console.log('🎯 [NAVIGATOR] Executing actions...');
       actionResults = await this.doMultiAction(actions);
+      console.log('✅ [NAVIGATOR] Actions executed, results:', actionResults.length);
       // logger.info('Action results', JSON.stringify(actionResults, null, 2));
 
       this.context.actionResults = actionResults;
 
       // check if the task is paused or stopped
       if (this.context.paused || this.context.stopped) {
+        console.log('⏸️ [NAVIGATOR] Task paused/stopped after actions, cancelling');
         cancelled = true;
         return agentOutput;
       }
+
       // emit event
+      console.log('📡 [NAVIGATOR] Emitting STEP_OK event');
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.STEP_OK, 'Navigation done');
+
       let done = false;
       if (actionResults.length > 0 && actionResults[actionResults.length - 1].isDone) {
         done = true;
+        console.log('✅ [NAVIGATOR] Last action indicates task completion');
+      } else {
+        console.log('🔄 [NAVIGATOR] Task not yet complete, continuing...');
       }
+
       agentOutput.result = { done };
+      console.log('✅ [NAVIGATOR] Navigation execution completed successfully, done:', done);
       return agentOutput;
     } catch (error) {
+      console.error('❌ [NAVIGATOR] Navigation execution failed:', error);
       this.removeLastStateMessageFromMemory();
       // Check if this is an authentication error
       if (isAuthenticationError(error)) {
+        console.error('❌ [NAVIGATOR] Authentication error detected');
         throw new ChatModelAuthError('Navigator API Authentication failed. Please verify your API key', error);
       }
       if (isForbiddenError(error)) {
+        console.error('❌ [NAVIGATOR] Forbidden error detected');
         throw new ChatModelForbiddenError(LLM_FORBIDDEN_ERROR_MESSAGE, error);
       }
       if (isAbortedError(error)) {
+        console.error('❌ [NAVIGATOR] Request was cancelled');
         throw new RequestCancelledError((error as Error).message);
       }
       if (error instanceof URLNotAllowedError) {
+        console.error('❌ [NAVIGATOR] URL not allowed by firewall');
         throw error;
       }
       if (isExtensionConflictError(error)) {
+        console.error('❌ [NAVIGATOR] Extension conflict detected');
         throw new ExtensionConflictError(EXTENSION_CONFLICT_ERROR_MESSAGE, error);
       }
 
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorString = `Navigation failed: ${errorMessage}`;
 
+      console.error('❌ [NAVIGATOR] Navigation failed with error:', errorString);
       logger.error(errorString);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.STEP_FAIL, errorString);
       agentOutput.error = errorMessage;
@@ -233,6 +276,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     } finally {
       // if the task is cancelled, remove the last state message from memory and emit event
       if (cancelled) {
+        console.log('🛑 [NAVIGATOR] Navigation was cancelled, cleaning up...');
         this.removeLastStateMessageFromMemory();
         this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.STEP_CANCEL, 'Navigation cancelled');
       }
@@ -616,7 +660,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
   }
 
   async updateActionIndices(
-    historicalElement: DOMHistoryElement,
+    historicalElement: unknown, // TODO: Define proper DOMHistoryElement interface
     action: Record<string, unknown>,
     currentState: BrowserState,
   ): Promise<Record<string, unknown> | null> {
@@ -627,7 +671,8 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
 
     // Find the current element in the tree based on the historical element
     const currentElement = await HistoryTreeProcessor.findHistoryElementInTree(
-      historicalElement,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      historicalElement as any, // Type assertion for unknown DOMHistoryElement
       currentState.elementTree,
     );
 

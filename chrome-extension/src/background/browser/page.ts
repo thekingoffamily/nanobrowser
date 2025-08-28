@@ -1606,8 +1606,8 @@ export default class Page {
       const errorMessage = `URL: ${currentUrl} is not allowed`;
       logger.error(errorMessage);
 
-      // Navigate to home page or about:blank
-      const safeUrl = this._config.homePageUrl || 'about:blank';
+      // Navigate to home page or Google as fallback
+      const safeUrl = this._config.homePageUrl || 'https://www.google.com';
       logger.info(`Redirecting to safe URL: ${safeUrl}`);
 
       try {

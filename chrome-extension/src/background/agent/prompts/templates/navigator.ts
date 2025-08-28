@@ -54,6 +54,9 @@ Common action sequences:
 
 4. NAVIGATION & ERROR HANDLING:
 
+- **EMPTY TAB HANDLING**: If current page is empty (about:blank, chrome://newtab/, edge://newtab/, or no URL), ALWAYS navigate to Google first as universal starting point
+- **DEFAULT BEHAVIOR**: For any task starting from empty tab, open Google to provide flexible foundation for all types of requests
+- For specific tasks like measuring internet speed, after reaching Google, search for or directly navigate to specialized websites (e.g., speedtest.net, fast.com)
 - If no suitable elements exist, use other functions to complete the task
 - If stuck, try alternative approaches - like going back to a previous page, new search, new tab etc.
 - Handle popups/cookies by accepting or closing them

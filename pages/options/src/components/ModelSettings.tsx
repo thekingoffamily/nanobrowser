@@ -21,6 +21,7 @@ import {
   getDefaultAgentModelParams,
   type ProviderConfig,
 } from '@extension/storage';
+import { fetchG4FModels } from '@extension/storage/lib/settings/g4fProvider';
 import { t } from '@extension/i18n';
 
 // Helper function to check if a model is an OpenAI reasoning model (O-series or GPT-5 models)
@@ -397,8 +398,8 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
 
     if (providerType === ProviderTypeEnum.CustomOpenAI) {
       hasInput = Boolean(config?.baseUrl?.trim()); // Custom needs Base URL, name checked elsewhere
-    } else if (providerType === ProviderTypeEnum.Ollama) {
-      hasInput = Boolean(config?.baseUrl?.trim()); // Ollama needs Base URL
+    } else if (providerType === ProviderTypeEnum.Ollama || providerType === ProviderTypeEnum.G4F) {
+      hasInput = Boolean(config?.baseUrl?.trim()); // Ollama and G4F need Base URL
     } else if (providerType === ProviderTypeEnum.AzureOpenAI) {
       // Azure needs API Key, Endpoint, Deployment Names, and API Version
       hasInput =
@@ -436,13 +437,14 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         return;
       }
 
-      // Check if base URL is required but missing for custom_openai, ollama, azure_openai or openrouter
+      // Check if base URL is required but missing for custom_openai, ollama, azure_openai, g4f or openrouter
       // Note: Groq and Cerebras do not require base URL as they use the default endpoint
       if (
         (providers[provider].type === ProviderTypeEnum.CustomOpenAI ||
           providers[provider].type === ProviderTypeEnum.Ollama ||
           providers[provider].type === ProviderTypeEnum.AzureOpenAI ||
           providers[provider].type === ProviderTypeEnum.OpenRouter ||
+          providers[provider].type === ProviderTypeEnum.G4F ||
           providers[provider].type === ProviderTypeEnum.Llama) &&
         (!providers[provider].baseUrl || !providers[provider].baseUrl.trim())
       ) {
@@ -455,6 +457,34 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
       if (!modelNames) {
         // Use default model names if not explicitly set
         modelNames = [...(llmProviderModelNames[provider as keyof typeof llmProviderModelNames] || [])];
+      }
+
+      // For G4F provider, try to fetch available models
+      if (providers[provider].type === ProviderTypeEnum.G4F && providers[provider].baseUrl) {
+        try {
+          console.log('🤖 [UI-G4F] Starting model fetch for provider:', provider);
+          console.log('🤖 [UI-G4F] Base URL:', providers[provider].baseUrl);
+
+          const g4fModels = await fetchG4FModels(providers[provider].baseUrl!, 3); // 3 retries
+
+          if (g4fModels.length > 0) {
+            console.log('✅ [UI-G4F] Successfully fetched', g4fModels.length, 'models:', g4fModels);
+            // Update the models for this G4F provider
+            setProviders(prev => ({
+              ...prev,
+              [provider]: {
+                ...prev[provider],
+                modelNames: g4fModels,
+              },
+            }));
+            modelNames = g4fModels;
+          } else {
+            console.warn('⚠️ [UI-G4F] No models returned, using defaults');
+          }
+        } catch (error) {
+          console.error('❌ [UI-G4F] Failed to fetch models after retries:', error);
+          // Don't show error to user as defaults will be used
+        }
       }
 
       // Prepare data for saving using the correctly typed config from state
@@ -1349,11 +1379,12 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                         </div>
                       )}
 
-                    {/* Base URL input (for custom_openai, ollama, azure_openai, openrouter, and llama) */}
+                    {/* Base URL input (for custom_openai, ollama, azure_openai, openrouter, g4f, and llama) */}
                     {(providerConfig.type === ProviderTypeEnum.CustomOpenAI ||
                       providerConfig.type === ProviderTypeEnum.Ollama ||
                       providerConfig.type === ProviderTypeEnum.AzureOpenAI ||
                       providerConfig.type === ProviderTypeEnum.OpenRouter ||
+                      providerConfig.type === ProviderTypeEnum.G4F ||
                       providerConfig.type === ProviderTypeEnum.Llama) && (
                       <div className="flex flex-col">
                         <div className="flex items-center">
@@ -1367,7 +1398,8 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                             {/* Show asterisk only if required */}
                             {/* OpenRouter has a default, so not strictly required, but needed for save button */}
                             {providerConfig.type === ProviderTypeEnum.CustomOpenAI ||
-                            providerConfig.type === ProviderTypeEnum.AzureOpenAI
+                            providerConfig.type === ProviderTypeEnum.AzureOpenAI ||
+                            providerConfig.type === ProviderTypeEnum.G4F
                               ? '*'
                               : ''}
                           </label>
@@ -1381,9 +1413,11 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                                   ? t('options_models_providers_placeholders_baseUrl_azure')
                                   : providerConfig.type === ProviderTypeEnum.OpenRouter
                                     ? t('options_models_providers_placeholders_baseUrl_openrouter')
-                                    : providerConfig.type === ProviderTypeEnum.Llama
-                                      ? t('options_models_providers_placeholders_baseUrl_llama')
-                                      : t('options_models_providers_placeholders_baseUrl_ollama')
+                                    : providerConfig.type === ProviderTypeEnum.G4F
+                                      ? 'http://127.0.0.1:1337/v1'
+                                      : providerConfig.type === ProviderTypeEnum.Llama
+                                        ? t('options_models_providers_placeholders_baseUrl_llama')
+                                        : t('options_models_providers_placeholders_baseUrl_ollama')
                             }
                             value={providerConfig.baseUrl || ''}
                             onChange={e => handleApiKeyChange(providerId, providerConfig.apiKey || '', e.target.value)}
@@ -1583,6 +1617,28 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                             className={`ml-1 ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}>
                             {t('options_models_providers_ollama_learnMore')}
                           </a>
+                        </p>
+                      </div>
+                    )}
+
+                    {/* G4F reminder at the bottom of the section */}
+                    {providerConfig.type === ProviderTypeEnum.G4F && (
+                      <div
+                        className={`mt-4 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700' : 'border-green-100 bg-green-50'} p-3`}>
+                        <p className={`text-sm ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                          <strong>G4F (GPT4Free)</strong> - Убедитесь, что ваш G4F API сервер запущен на указанном URL.
+                          <br />
+                          Пример запуска:{' '}
+                          <code
+                            className={`rounded italic ${isDarkMode ? 'bg-slate-600 px-1 py-0.5' : 'bg-green-100 px-1 py-0.5'}`}>
+                            g4f api
+                          </code>
+                          <br />
+                          <span className={`text-xs ${isDarkMode ? 'text-yellow-300' : 'text-amber-600'}`}>
+                            ⚠️ Примечание: G4F настроен для использования моделей без авторизации (Qwen, Phi, Gemma).
+                            Если некоторые модели недоступны, система автоматически переключится на другие доступные
+                            модели.
+                          </span>
                         </p>
                       </div>
                     )}

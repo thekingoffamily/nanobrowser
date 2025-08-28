@@ -1,7 +1,9 @@
 /* eslint-disable react/prop-types */
-import { FaTrash } from 'react-icons/fa';
+import { FaTrash, FaFileExport } from 'react-icons/fa';
 import { BsBookmark } from 'react-icons/bs';
 import { t } from '@extension/i18n';
+import { exportChatHistory } from '../utils/chatExport';
+import { chatHistoryStore } from '@extension/storage';
 
 interface ChatSession {
   id: string;
@@ -31,6 +33,19 @@ const ChatHistoryList: React.FC<ChatHistoryListProps> = ({
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp);
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const handleExportSession = async (sessionId: string) => {
+    try {
+      const session = await chatHistoryStore.getSession(sessionId);
+      if (session && session.messages.length > 0) {
+        await exportChatHistory(session.messages, session.title);
+        // Можно добавить уведомление об успешном экспорте
+        console.log('История чата успешно экспортирована:', session.title);
+      }
+    } catch (error) {
+      console.error('Ошибка при экспорте истории чата:', error);
+    }
   };
 
   return (
@@ -77,6 +92,22 @@ const ChatHistoryList: React.FC<ChatHistoryListProps> = ({
                   <BsBookmark size={14} />
                 </button>
               )}
+
+              {/* Export button - middle right */}
+              <button
+                onClick={e => {
+                  e.stopPropagation();
+                  handleExportSession(session.id);
+                }}
+                className={`absolute right-2 top-10 rounded p-1 opacity-0 transition-opacity group-hover:opacity-100 ${
+                  isDarkMode
+                    ? 'bg-slate-700 text-sky-400 hover:bg-slate-600'
+                    : 'bg-white text-sky-500 hover:bg-gray-100'
+                }`}
+                aria-label={t('chat_history_export') || 'Экспортировать историю чата'}
+                type="button">
+                <FaFileExport size={14} />
+              </button>
 
               {/* Delete button - bottom right */}
               <button
